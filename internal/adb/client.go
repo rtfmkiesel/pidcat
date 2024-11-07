@@ -93,7 +93,7 @@ func (client *Client) Run(timeoutSeconds int, args ...string) (string, error) {
 			return "", fmt.Errorf("%s: timeout", strings.Join(adbCmd, " "))
 		}
 
-		return "", fmt.Errorf("%s: %s", strings.Join(adbCmd, " "), err)
+		return "", fmt.Errorf("%s\n%s\n%s", strings.Join(adbCmd, " "), out, err)
 	}
 
 	return string(out), nil
