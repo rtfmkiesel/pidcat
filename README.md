@@ -13,6 +13,8 @@ PACKAGE OPTIONS:
    -a, -all               display messages from all packages
    -current               filter by the app currently in the foreground
    -p, -package string[]  application package name(s)
+   -list-packages         list all third party package names
+   -list-all-packages     list all package names
 
 ADB OPTIONS:
    -s, -serial string  device serial number (adb -s)
@@ -25,6 +27,7 @@ LOGCAT OPTIONS:
    -c, -clear                 clear the log before running
    -mt, -match-tag string[]   filter by specific tag(s)
    -ft, -filter-tag string[]  ignore specific tag(s)
+   -lf, -log-file string      write logcat output to file (level:tag:message)
 ```
 
 ## Installation
