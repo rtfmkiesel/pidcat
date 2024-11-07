@@ -2,6 +2,7 @@ package adb
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -15,6 +16,7 @@ type LogcatOptions struct {
 	MinLevel   string              // The minimum log level to show
 	Tags       goflags.StringSlice // The tags to filter for
 	IgnoreTags goflags.StringSlice // The tags to ignore
+	FhLogFile  *os.File            // The file handle to write the logcat output to
 }
 
 // The struct to represent a logcat line
@@ -132,6 +134,20 @@ func (entry LogcatEntry) Print() {
 	coloredMsg := colorLevelV.Sprint(formatMsg(entry.MSG)) // Use colorLevelV for the black background
 
 	fmt.Fprintln(color.Output, coloredName+coloredLevel+coloredMsg)
+}
+
+// Writes a logcat line to a file
+func (entry LogcatEntry) ToFile(fh *os.File) (err error) {
+	if fh == nil {
+		return nil
+	}
+
+	_, err = fh.WriteString(fmt.Sprintf("%s:%s:%s\n", entry.Level, entry.Tag, entry.MSG))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Formats the tag to be colored and have a fixed length

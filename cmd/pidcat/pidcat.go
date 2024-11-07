@@ -113,6 +113,11 @@ func main() {
 
 			// Print the logcat line
 			entry.Print()
+
+			// Save to file
+			if err := entry.ToFile(opt.FhLogFile); err != nil {
+				fmt.Fprintf(color.Error, "ERROR: %s\n", err)
+			}
 		}
 	}()
 

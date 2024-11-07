@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/projectdiscovery/goflags"
 	"github.com/rtfmkiesel/pidcat/internal/adb"
@@ -10,6 +11,7 @@ import (
 type Options struct {
 	ADBClient *adb.Client
 	Logcat    *adb.LogcatOptions
+	FhLogFile *os.File
 }
 
 // Parses the cli options
@@ -19,8 +21,10 @@ func Parse() (opt *Options, err error) {
 	}
 
 	var (
-		allPackages    bool
-		currentPackage bool
+		allPackages     bool
+		currentPackage  bool
+		listPackages    bool
+		listAllPackages bool
 	)
 	flagset := goflags.NewFlagSet()
 	flagset.SetDescription("Makes 'adb logcat' colored and adds the feature of filtering by app or tag\nA Golang port of github.com/JakeWharton/pidcat")
@@ -28,6 +32,8 @@ func Parse() (opt *Options, err error) {
 		flagset.BoolVarP(&allPackages, "all", "a", false, "display messages from all packages"),
 		flagset.BoolVar(&currentPackage, "current", false, "filter by the app currently in the foreground"),
 		flagset.StringSliceVarP(&opt.Logcat.Packages, "package", "p", goflags.StringSlice{}, "application package name(s)", goflags.CommaSeparatedStringSliceOptions),
+		flagset.BoolVar(&listPackages, "list-packages", false, "list all third party package names"),
+		flagset.BoolVar(&listAllPackages, "list-all-packages", false, "list all package names"),
 	)
 
 	var (
@@ -45,12 +51,14 @@ func Parse() (opt *Options, err error) {
 
 	var (
 		clearOutput bool
+		logFile     string
 	)
 	flagset.CreateGroup("Logcat Options", "Logcat Options",
 		flagset.EnumVarP(&opt.Logcat.MinLevel, "min-level", "l", adb.LevelVerbose, "minimum log level to be displayed", adb.AllowedLevels),
 		flagset.BoolVarP(&clearOutput, "clear", "c", false, "clear the log before running"),
 		flagset.StringSliceVarP(&opt.Logcat.Tags, "match-tag", "mt", goflags.StringSlice{}, "filter by specific tag(s)", goflags.CommaSeparatedStringSliceOptions),
 		flagset.StringSliceVarP(&opt.Logcat.IgnoreTags, "filter-tag", "ft", goflags.StringSlice{}, "ignore specific tag(s)", goflags.CommaSeparatedStringSliceOptions),
+		flagset.StringVarP(&logFile, "log-file", "lf", "", "write logcat output to file (level:tag:message)"),
 	)
 
 	if err = flagset.Parse(); err != nil {
@@ -74,6 +82,32 @@ func Parse() (opt *Options, err error) {
 		return nil, err
 	}
 
+	if listPackages {
+		packages, err := opt.ADBClient.ListThirdPartyPackages()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range packages {
+			fmt.Println(p)
+		}
+
+		os.Exit(0)
+	}
+
+	if listAllPackages {
+		packages, err := opt.ADBClient.ListAllPackages()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, p := range packages {
+			fmt.Println(p)
+		}
+
+		os.Exit(0)
+	}
+
 	if allPackages {
 		// Users wants all packages, do not filter
 
@@ -93,6 +127,13 @@ func Parse() (opt *Options, err error) {
 
 	if clearOutput {
 		if err := opt.ADBClient.ClearLogcatOutput(); err != nil {
+			return nil, err
+		}
+	}
+
+	if logFile != "" {
+		opt.FhLogFile, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -3,6 +3,7 @@ package adb
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -73,6 +74,44 @@ func (client *Client) GetProcesses() (processes []*Process, err error) {
 	}
 
 	return processes, err
+}
+
+// Returns a list of all packages installed on the device via 'adb shell pm list packages'
+func (client *Client) ListAllPackages() (packages []string, err error) {
+	out, err := client.Run(5, "shell", "pm", "list", "packages")
+	if err != nil {
+		return nil, err
+	}
+
+	packages = []string{}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, "package:") {
+			packages = append(packages, strings.TrimSpace(strings.TrimPrefix(line, "package:")))
+		}
+	}
+
+	slices.Sort(packages)
+
+	return packages, nil
+}
+
+// Returns a list of all third party packages installed on the device via 'adb shell pm list packages -3'
+func (client *Client) ListThirdPartyPackages() (packages []string, err error) {
+	out, err := client.Run(5, "shell", "pm", "list", "packages", "-3")
+	if err != nil {
+		return nil, err
+	}
+
+	packages = []string{}
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, "package:") {
+			packages = append(packages, strings.TrimSpace(strings.TrimPrefix(line, "package:")))
+		}
+	}
+
+	slices.Sort(packages)
+
+	return packages, nil
 }
 
 // Returns the slug (com.example.app) of the app in the foreground via 'adb shell dumsys'
