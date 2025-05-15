@@ -57,7 +57,7 @@ func (client *Client) setADBPath(binPath string) (err error) {
 		// User did not specify a path, look at $PATH
 		binPath, err = exec.LookPath("adb")
 		if err != nil {
-			return fmt.Errorf("adb not found $PATH")
+			return fmt.Errorf("adb not found in $PATH")
 		}
 	}
 

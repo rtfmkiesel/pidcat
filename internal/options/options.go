@@ -27,6 +27,7 @@ func Parse() (opt *Options, err error) {
 		listAllPackages bool
 	)
 	flagset := goflags.NewFlagSet()
+	flagset.SetConfigFilePath(os.DevNull) // Disables the invasive config file creation of goflags
 	flagset.SetDescription("Makes 'adb logcat' colored and adds the feature of filtering by app or tag\nA Golang port of github.com/JakeWharton/pidcat")
 	flagset.CreateGroup("Package Options", "Package Options",
 		flagset.BoolVarP(&allPackages, "all", "a", false, "display messages from all packages"),

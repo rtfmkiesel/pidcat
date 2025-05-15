@@ -96,7 +96,7 @@ func (client *Client) ClearLogcatOutput() (err error) {
 // Parses a logcat line into a LogcatEntry struct
 func ParseLogcatLine(line string) (entry LogcatEntry, err error) {
 	matches := reLine.FindStringSubmatch(line)
-	if matches == nil || len(matches) < 5 {
+	if len(matches) < 5 {
 		return entry, fmt.Errorf("could not parse logcat line")
 	}
 
