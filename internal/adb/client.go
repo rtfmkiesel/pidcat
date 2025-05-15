@@ -2,7 +2,6 @@ package adb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -41,17 +40,25 @@ func NewClient(binPath string, connectionStr []string) (client *Client, err erro
 
 // Checks if ADB at binPath exists and gets the full path from the output of 'adb version'
 func (client *Client) setADBPath(binPath string) (err error) {
-	// Expand ~ to absolute path
-	usr, _ := user.Current()
-	homeDir := usr.HomeDir
-	if strings.HasPrefix(binPath, "~") {
-		binPath = filepath.Join(homeDir, binPath[2:])
-	}
+	if binPath != "" {
+		// User specified a custom path to adb
 
-	// Check if binary is there
-	_, err = os.Stat(binPath)
-	if errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("%s not found", binPath)
+		// The tilde char will create an error, expand home
+		if strings.HasPrefix(binPath, "~") {
+			usr, _ := user.Current()
+			homeDir := usr.HomeDir
+			binPath = filepath.Join(homeDir, binPath[2:])
+		}
+
+		if _, err = os.Stat(binPath); err != nil {
+			return fmt.Errorf("adb not found at %s", binPath)
+		}
+	} else {
+		// User did not specify a path, look at $PATH
+		binPath, err = exec.LookPath("adb")
+		if err != nil {
+			return fmt.Errorf("adb not found $PATH")
+		}
 	}
 
 	client.BaseCmd = append(client.BaseCmd, binPath) // Set this temporarily to make client.Run below work

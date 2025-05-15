@@ -46,7 +46,7 @@ func Parse() (opt *Options, err error) {
 		flagset.StringVarP(&serial, "serial", "s", "", "device serial number (adb -s)"),
 		flagset.BoolVarP(&device, "device", "d", false, "use the first device (adb -d)"),
 		flagset.BoolVarP(&emulator, "emulator", "e", false, "use the first emulator (adb -e)"),
-		flagset.StringVar(&binpath, "adb-path", "adb", "path to the ADB binary"),
+		flagset.StringVar(&binpath, "adb-path", "", "path to the ADB binary"),
 	)
 
 	var (
