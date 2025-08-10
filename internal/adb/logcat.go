@@ -8,15 +8,14 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/nathan-fiscaletti/consolesize-go"
-	"github.com/projectdiscovery/goflags"
 )
 
 type LogcatOptions struct {
-	Packages   goflags.StringSlice // The packages to filter for
-	MinLevel   string              // The minimum log level to show
-	Tags       goflags.StringSlice // The tags to filter for
-	IgnoreTags goflags.StringSlice // The tags to ignore
-	FhLogFile  *os.File            // The file handle to write the logcat output to
+	Packages   []string // The packages to filter for
+	MinLevel   string   // The minimum log level to show
+	Tags       []string // The tags to filter for
+	IgnoreTags []string // The tags to ignore
+	FhLogFile  *os.File // The file handle to write the logcat output to
 }
 
 // The struct to represent a logcat line
@@ -29,36 +28,17 @@ type LogcatEntry struct {
 
 const (
 	// The available log levels
-	LevelVerbose goflags.EnumVariable = 1
-	LevelDebug   goflags.EnumVariable = 2
-	LevelInfo    goflags.EnumVariable = 3
-	LevelWarning goflags.EnumVariable = 4
-	LevelError   goflags.EnumVariable = 5
-	LevelFatal   goflags.EnumVariable = 6
-	LevelSilent  goflags.EnumVariable = 7
+	LevelVerbose = iota // 0
+	LevelDebug          // 1
+	LevelInfo           // 2
+	LevelWarning        // 3
+	LevelError          // 4
+	LevelFatal          // 5
 
 	MaxLenTag = 20 // The maximum length of a tag for the terminal UI
 )
 
 var (
-	// The allowed log levels used for parsing the CLI arguments with goflags
-	AllowedLevels = goflags.AllowdTypes{
-		"verbose": LevelVerbose,
-		"debug":   LevelDebug,
-		"info":    LevelInfo,
-		"warning": LevelWarning,
-		"error":   LevelError,
-		"fatal":   LevelFatal,
-		"silent":  LevelSilent,
-		"V":       LevelVerbose,
-		"D":       LevelDebug,
-		"I":       LevelInfo,
-		"W":       LevelWarning,
-		"E":       LevelError,
-		"F":       LevelFatal,
-		"S":       LevelSilent,
-	}
-
 	// The regex to parse a logcat line
 	reLine = regexp.MustCompile(`(\S){1}/([^\(]*)\([\s]*([\d]*)\):[\s]*([^\n]*)`)
 
@@ -82,6 +62,15 @@ var (
 
 	// A map to store encountered tags and their color
 	tagColorMap = make(map[string]*color.Color)
+
+	LevelMap = map[string]int{
+		"V": LevelVerbose,
+		"D": LevelDebug,
+		"I": LevelInfo,
+		"W": LevelWarning,
+		"E": LevelError,
+		"F": LevelFatal,
+	}
 )
 
 // Clears the logcat output via 'logcat -c'
@@ -203,5 +192,5 @@ func formatMsg(msg string) string {
 
 // Checks if the level is higher or the same as the wanted one
 func IsLevelInScope(entryLevel string, wantedLevel string) bool {
-	return AllowedLevels[entryLevel] >= AllowedLevels[wantedLevel]
+	return LevelMap[entryLevel] >= LevelMap[wantedLevel]
 }

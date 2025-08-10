@@ -3,9 +3,10 @@ package options
 import (
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/projectdiscovery/goflags"
 	"github.com/rtfmkiesel/pidcat/internal/adb"
+	flag "github.com/spf13/pflag"
 )
 
 type Options struct {
@@ -26,16 +27,12 @@ func Parse() (opt *Options, err error) {
 		listPackages    bool
 		listAllPackages bool
 	)
-	flagset := goflags.NewFlagSet()
-	flagset.SetConfigFilePath(os.DevNull) // Disables the invasive config file creation of goflags
-	flagset.SetDescription("Makes 'adb logcat' colored and adds the feature of filtering by app or tag\nA Golang port of github.com/JakeWharton/pidcat")
-	flagset.CreateGroup("Package Options", "Package Options",
-		flagset.BoolVarP(&allPackages, "all", "a", false, "display messages from all packages"),
-		flagset.BoolVar(&currentPackage, "current", false, "filter by the app currently in the foreground"),
-		flagset.StringSliceVarP(&opt.Logcat.Packages, "package", "p", goflags.StringSlice{}, "application package name(s)", goflags.CommaSeparatedStringSliceOptions),
-		flagset.BoolVar(&listPackages, "list-packages", false, "list all third party package names"),
-		flagset.BoolVar(&listAllPackages, "list-all-packages", false, "list all package names"),
-	)
+
+	flag.BoolVarP(&allPackages, "all", "a", false, "display messages from all packages")
+	flag.BoolVar(&currentPackage, "current", false, "filter by the current app only")
+	flag.StringSliceVarP(&opt.Logcat.Packages, "package", "p", nil, "application package name(s)")
+	flag.BoolVar(&listPackages, "list-packages", false, "list all third party package names")
+	flag.BoolVar(&listAllPackages, "list-all-packages", false, "list all package names")
 
 	var (
 		binpath  string
@@ -43,28 +40,25 @@ func Parse() (opt *Options, err error) {
 		device   bool
 		emulator bool
 	)
-	flagset.CreateGroup("ADB Options", "ADB Options",
-		flagset.StringVarP(&serial, "serial", "s", "", "device serial number (adb -s)"),
-		flagset.BoolVarP(&device, "device", "d", false, "use the first device (adb -d)"),
-		flagset.BoolVarP(&emulator, "emulator", "e", false, "use the first emulator (adb -e)"),
-		flagset.StringVar(&binpath, "adb-path", "", "path to the ADB binary"),
-	)
+
+	flag.StringVarP(&serial, "serial", "s", "", "device serial number (adb -s)")
+	flag.BoolVarP(&device, "device", "d", false, "use the first device (adb -d)")
+	flag.BoolVarP(&emulator, "emulator", "e", false, "use the first emulator (adb -e)")
+	flag.StringVar(&binpath, "adb-path", "", "path to the ADB binary")
 
 	var (
+		minLevel    string
 		clearOutput bool
 		logFile     string
 	)
-	flagset.CreateGroup("Logcat Options", "Logcat Options",
-		flagset.EnumVarP(&opt.Logcat.MinLevel, "min-level", "l", adb.LevelVerbose, "minimum log level to be displayed", adb.AllowedLevels),
-		flagset.BoolVarP(&clearOutput, "clear", "c", false, "clear the log before running"),
-		flagset.StringSliceVarP(&opt.Logcat.Tags, "match-tag", "mt", goflags.StringSlice{}, "filter by specific tag(s)", goflags.CommaSeparatedStringSliceOptions),
-		flagset.StringSliceVarP(&opt.Logcat.IgnoreTags, "filter-tag", "ft", goflags.StringSlice{}, "ignore specific tag(s)", goflags.CommaSeparatedStringSliceOptions),
-		flagset.StringVarP(&logFile, "log-file", "lf", "", "write logcat output to file (level:tag:message)"),
-	)
 
-	if err = flagset.Parse(); err != nil {
-		return nil, err
-	}
+	flag.StringVarP(&minLevel, "min-level", "l", "V", "minimum log level to be displayed (V,D,I,W,E,F)")
+	flag.BoolVarP(&clearOutput, "clear", "c", false, "clear the log before running")
+	flag.StringSliceVarP(&opt.Logcat.Tags, "match-tag", "m", nil, "filter by specific tag(s)")
+	flag.StringSliceVarP(&opt.Logcat.IgnoreTags, "filter-tag", "f", nil, "ignore specific tag(s)")
+	flag.StringVarP(&logFile, "log-file", "L", "", "write logcat output to file (level:tag:message)")
+
+	flag.Parse()
 
 	// Select the connection option
 	connectionStr := []string{}
@@ -138,6 +132,12 @@ func Parse() (opt *Options, err error) {
 			return nil, err
 		}
 	}
+
+	minLevel = strings.ToUpper(minLevel)
+	if _, ok := adb.LevelMap[minLevel]; !ok {
+		return nil, fmt.Errorf("invalid level '%s'", minLevel)
+	}
+	opt.Logcat.MinLevel = minLevel
 
 	return opt, nil
 }
